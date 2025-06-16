@@ -25,14 +25,14 @@ function Game() {
   return (
     <>
       <div id="root-window">
-        <div id="loading">LOADING...</div>
+        <div id="loadingBar">
+          <div id="loadingText">Loading THREE.js</div>
+          <div id="filled"></div>
+        </div>
+        <div id="loading">Title Card</div>
         <div id="start">
-          <button id="host">
-            Host
-          </button>
-          <button id="join">
-            Join
-          </button>
+          <button id="host">Host</button>
+          <button id="join">Join</button>
         </div>
         <div id="render-target"></div>
       </div>

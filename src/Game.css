@@ -4,6 +4,10 @@
     height: 100vh;
 }
 
+body{
+    overflow: hidden;
+}
+
 #loading{
     text-align: center;
 }
@@ -22,4 +26,28 @@
 .start button{
     padding: 15px 40px;
     font-size: 2rem;
+}
+
+#loadingBar{
+    width: 800px;
+    background-color: white;
+    text-align: center;
+    position: absolute;
+    top: calc(50% - 25px);
+    left: calc(50% - 400px);
+    z-index: 100;
+    height: 65px;
+    overflow: hidden;
+}
+
+#loadingText{
+    padding: 20px;
+}
+
+#filled{
+    height: 100px;
+    width: 0%;
+    background-color: #1f913b;
+    z-index: 101;
+    margin-top: -65px;
 }
