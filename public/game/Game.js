@@ -106,7 +106,7 @@ export function createScene() {
             }
           }
 
-          if(child.name.contains("hitbox")){
+          if (child.name instanceof String && child.name.contains("hitbox")) {
             hitboxes.push(child);
           }
         });
