@@ -51,6 +51,8 @@ export function createScene() {
 
   let carAnimMixer = null;
 
+  let playerHitbox = null;
+
   const ambientLight = new THREE.AmbientLight(0x3030f0, 3); // Soft white light
   scene.add(ambientLight);
 
@@ -83,6 +85,8 @@ export function createScene() {
 
   let hitboxes = [];
 
+  let boxHelperPlayer = null;
+
   displayLoading(10, "Loading Background");
   loader.load("/game/360.png", (img) => {
     img.mapping = THREE.EquirectangularReflectionMapping;
@@ -90,64 +94,75 @@ export function createScene() {
     scene.background = img;
 
     displayLoading(40, "Loading Track");
-      gltfLoader.load("/game/models/trackbig/trackbig.glb", (gltf) => {
-        let track = gltf.scene;
-        track.scale.set(1, 1, 1); // Scale the model down
+    gltfLoader.load("/game/models/trackbig/trackbig.glb", (gltf) => {
+      let track = gltf.scene;
+      track.scale.set(1, 1, 1); // Scale the model down
 
-        // Enable shadow casting for all meshes in the loaded GLTF model
-        track.traverse((child) => {
-          if (child.isMesh) {
-            child.receiveShadow = false; // Only cast shadow, don't receive
-            child.castShadow = false; // Enable shadow casting
-            child.layers.set(0); // Enable layer 0 for the track model
-            if (child.name === "BézierCurve.001") {
-              child.receiveShadow = true; // Only cast shadow, don't receive
-              child.layers.set(lightLayer); // Enable layer 0 for the track model
-            }
+      // Enable shadow casting for all meshes in the loaded GLTF model
+      track.traverse((child) => {
+        if (child.isMesh) {
+          child.receiveShadow = false; // Only cast shadow, don't receive
+          child.castShadow = false; // Enable shadow casting
+          child.layers.set(0); // Enable layer 0 for the track model
+          if (child.name === "BézierCurve.001") {
+            child.receiveShadow = true; // Only cast shadow, don't receive
+            child.layers.set(lightLayer); // Enable layer 0 for the track model
           }
+        }
 
-          if (child.name instanceof String && child.name.contains("hitbox")) {
-            hitboxes.push(child);
-          }
+        if (child.name && child.name.indexOf("hitbox") != -1) {
+          let mesh = new THREE.Box3().setFromObject(child);
+
+          let boxHelper = new THREE.BoxHelper(child, 0xff0000); // Red outline
+          scene.add(boxHelper);
+
+          hitboxes.push(mesh);
+        }
+      });
+
+      scene.add(track);
+
+      displayLoading(60, "Loading Car");
+      gltfLoader.load("/game/models/car/car.glb", (gltf) => {
+        displayLoading(100, "Done");
+        playerController.player = gltf.scene;
+
+        playerController.player.scale.set(1, 1, 1); // Scale the model down
+        playerController.player.layers.set(lightLayer); // Enable layer 0 for the player model
+
+        carAnimMixer = new THREE.AnimationMixer(playerController.player);
+        gltf.animations.forEach((clip) => {
+          carAnims[clip.name] = carAnimMixer.clipAction(clip);
+          carAnims[clip.name].setLoop(THREE.LoopOnce);
         });
 
-        scene.add(track);
+        console.log(carAnims);
 
-        displayLoading(60, "Loading Car");
-        gltfLoader.load("/game/models/car/car.glb", (gltf) => {
-          displayLoading(100, "Done");
-          playerController.player = gltf.scene;
+        setInterval(() => {
+        }, 20000) 
 
-          playerController.player.scale.set(5, 5, 5); // Scale the model down
-          playerController.player.layers.set(lightLayer); // Enable layer 0 for the player model
-
-          carAnimMixer = new THREE.AnimationMixer(playerController.player);
-          gltf.animations.forEach((clip) => {
-            carAnims[clip.name] = carAnimMixer.clipAction(clip);
-            carAnims[clip.name].setLoop(THREE.LoopOnce);
-          });
-
-          console.log(carAnims);
-
-          setInterval(() => {
-            carAnims["LookTrack"].play();
-          }, 20000)
-
-          // Enable shadow casting for all meshes in the loaded GLTF model
           playerController.player.traverse((child) => {
             if (child.isMesh) {
               child.castShadow = true;
-              child.receiveShadow = false; // Only cast shadow, don't receive
+              child.receiveShadow = false;
             }
           });
 
-          scene.add(playerController.player);
+        playerHitbox = new THREE.Box3().setFromObject(playerController.player);
 
-          carModel = playerController.player.clone();
+        scene.add(playerController.player);
 
-          waitForStart();
-        });
+        boxHelperPlayer = new THREE.BoxHelper(
+          playerController.player,
+          0x00ff00
+        ); //Green for player
+        scene.add(boxHelperPlayer);
+
+        carModel = playerController.player.clone();
+
+        waitForStart();
       });
+    });
   });
 
   let messager = document.getElementById("loading");
@@ -282,12 +297,49 @@ export function createScene() {
 
   let others = [];
 
+
+
   function tick() {
+
+    boxHelperPlayer.update();
+    playerHitbox = new THREE.Box3().setFromObject(playerController.player);
+
+    const ground = 0.5;
+    if (playerController.position.y <= ground) {
+      playerController.position.y = ground;
+      playerController.velocity.y = 0;
+    }
+
+    hitboxes.forEach((mesh) => {
+      if (mesh.intersectsBox(playerHitbox)) {
+        if(playerHitbox.min.y <= mesh.min.y){
+
+          console.log("collision side");
+          let origin = mesh.min.addScaledVector(mesh.max, 1);
+          origin = origin.multiplyScalar(0.5);
+          let dir = playerController.position.sub(origin);
+
+          dir.y = 0;
+          dir.normalize();
+
+          console.log(dir);
+          playerController.velocity.addScaledVector(dir, 1);
+          
+        }
+        else{
+          
+          console.log("collision top");
+          playerController.position.y = mesh.max.y;
+          playerController.velocity.y = 0;
+          
+        }
+      }
+    });
+
     playerController.tick(0.016); // Assuming 60 FPS, so deltaTime is ~0.016 seconds
 
     carAnimMixer.update(0.016);
 
-    
     elapsed += 0.016;
 
     // Map world x/z to [0, 1] for a 200x200 track centered at (0,0)
@@ -301,12 +353,11 @@ export function createScene() {
       const v = ((playerController.position.z + 100) / 200 + 0.5) / 2;
 
       //console.log(getGroundHeight(collideTexture, u, v).r);
-
-      
     } else {
       console.warn(playerController.position);
     }
     camera.cameraOrigin.copy(playerController.position);
+    camera.cameraOrigin.add(new THREE.Vector3(1, 2, 0));
     camera.updateCameraPosition();
 
     let translationalSpeed = new THREE.Vector2(
@@ -319,15 +370,13 @@ export function createScene() {
     camera.cameraAzimuthMax = camCenter + 90; // Update camera azimuth based on player rotation
     camera.cameraAzimuthMin = camCenter - 90; // Update camera azimuth based on player rotation
 
-    
     if (Math.abs(camera.cameraAzimuth - camCenter) < 0.1) {
       playerController.rotationVelocity.y = 0;
+    } else {
+      playerController.rotationVelocity.y = camera.cameraAzimuth - camCenter;
+      playerController.rotationVelocity.y *= 0.9;
     }
-    else{
-        playerController.rotationVelocity.y = camera.cameraAzimuth - camCenter;
-        playerController.rotationVelocity.y *= 0.9;
-    }
-      
+
     camera.updateCameraPosition();
 
     dirLight.position.copy(playerController.position);
@@ -339,7 +388,9 @@ export function createScene() {
 
       other.position.addScaledVector(other.velocity, 0.016);
 
-      other.velocity.multiplyScalar(0.9);
+      other.velocity.x *= 0.9;
+      other.velocity.z *= 0.9;
+      other.velocity.y *= 1;
 
       other.timeSinceTick += 0.016;
 

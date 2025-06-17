@@ -4,7 +4,7 @@ import { keys } from "./input.js";
 
 export class PlayerController {
   constructor() {
-    this.position = new THREE.Vector3(-423.821, 2, -5.982);
+    this.position = new THREE.Vector3(0.821, 2, -5.982);
     this.rotation = new THREE.Euler(0, -Math.PI, 0);
     this.velocity = new THREE.Vector3(0, 0, 0);
     this.acceleration = new THREE.Vector3(0, 0, 0);
@@ -12,7 +12,7 @@ export class PlayerController {
     this.rotationSpeed = 0.05; // Rotation speed in radians per second
     this.rotationVelocity = new THREE.Vector3(0, 0, 0);
     this.speed = 50;
-    this.maxSpeed = 100.0;
+    this.maxSpeed = 100.0; //terminal velocity
     this.player = null;
   }
   tick(deltaTime) {
@@ -35,14 +35,17 @@ export class PlayerController {
       y = -this.speed; // Move backward
     }
 
-    if (keys[" "] && this.velocity.y <= 0) {
-      this.velocity.y = 20;
-    }
-    else{
-      this.acceleration.y = -1;
+    
+
+    if (keys[" "] && this.velocity.y === 0) {
+      this.velocity.y = 50;
+      this.position.y += 0.1;
     }
 
-    this.acceleration.set(x, 0, y);
+    this.acceleration.set(x, -60, y);
+
+    
+
     this.acceleration.applyEuler(this.rotation, "XYZ"); // Apply rotation to acceleration
     // Apply acceleration
     this.velocity.addScaledVector(this.acceleration, deltaTime);
@@ -54,7 +57,10 @@ export class PlayerController {
     this.rotation.y += this.rotationVelocity.y * deltaTime; // Update rotation based on rotation velocity
 
     this.velocity.clampLength(0, this.maxSpeed); // Limit speed]
-    this.velocity.multiplyScalar(0.9); // Dampen velocity
+
+    this.velocity.x *= 0.9;
+    this.velocity.z *= 0.9;
+    this.velocity.y *= 1;
 
     if (Math.abs(this.velocity.x) < 0.01) {
       this.velocity.x = 0;

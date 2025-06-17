@@ -15,8 +15,10 @@ const MIN_CAMERA_ELEVATION = -45;
 const MAX_CAMERA_ELEVATION = 45;
 
 // Camera sensitivity
-const AZIMUTH_SENSITIVITY = 0.02;
-const ELEVATION_SENSITIVITY = 0.02;
+
+const senz = 0.04;
+const AZIMUTH_SENSITIVITY = senz;
+const ELEVATION_SENSITIVITY = senz;
 const PAN_SENSITIVITY = -0.01;
 
 const Y_AXIS = new THREE.Vector3(0, 1, 0);
@@ -33,6 +35,9 @@ export class CameraManager {
     this.cameraRadius = 35; //100
     this.cameraAzimuth = -90;
     this.cameraElevation = 2.3; //2
+
+    this.cameraAzimuthMin = 0;
+    this.cameraAzimuthMax = 180;
 
     this.updateCameraPosition();
 
