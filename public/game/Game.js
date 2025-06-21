@@ -104,10 +104,7 @@ export function createScene() {
           child.receiveShadow = false; // Only cast shadow, don't receive
           child.castShadow = false; // Enable shadow casting
           child.layers.set(0); // Enable layer 0 for the track model
-          if (child.name === "BézierCurve.001") {
-            child.receiveShadow = true; // Only cast shadow, don't receive
-            child.layers.set(lightLayer); // Enable layer 0 for the track model
-          }
+          
         }
 
         if (child.name && child.name.indexOf("hitbox") != -1) {
@@ -116,9 +113,14 @@ export function createScene() {
           let boxHelper = new THREE.BoxHelper(child, 0xff0000); // Red outline
           scene.add(boxHelper);
 
-          hitboxes.push(mesh);
+          hitboxes.push({
+            box: mesh,
+            bounce: -5 //-1 - 0
+          });
         }
       });
+
+      console.log(hitboxes.length + " hitboxes detected");
 
       scene.add(track);
 
@@ -302,7 +304,7 @@ export function createScene() {
   function tick() {
 
     boxHelperPlayer.update();
-    playerHitbox = new THREE.Box3().setFromObject(playerController.player);
+    playerHitbox.setFromObject(playerController.player);
 
     const ground = 0.5;
     if (playerController.position.y <= ground) {
@@ -310,27 +312,31 @@ export function createScene() {
       playerController.velocity.y = 0;
     }
 
-    hitboxes.forEach((mesh) => {
+    hitboxes.forEach((hitbox) => {
+      let mesh = hitbox.box;
       if (mesh.intersectsBox(playerHitbox)) {
         if(playerHitbox.min.y <= mesh.min.y){
 
           console.log("collision side");
-          let origin = mesh.min.addScaledVector(mesh.max, 1);
+          let origin = new THREE.Vector3().copy(mesh.min);
+          origin.addScaledVector(mesh.max, 1);
           origin = origin.multiplyScalar(0.5);
-          let dir = playerController.position.sub(origin);
+          origin.sub(playerController.position);
 
-          dir.y = 0;
-          dir.normalize();
+          if(Math.abs(origin.x) > Math.abs(origin.z)){
+            playerController.velocity.x *= hitbox.bounce;
+          }
+          else{
+            playerController.velocity.z *= hitbox.bounce;
+          }
 
-          console.log(dir);
-          playerController.velocity.addScaledVector(dir, 1);
           
         }
         else{
           
           console.log("collision top");
           playerController.position.y = mesh.max.y;
-          playerController.velocity.y = 0;
+          playerController.velocity.y *= hitbox.bounce;
           
         }
       }
@@ -342,30 +348,36 @@ export function createScene() {
 
     elapsed += 0.016;
 
-    // Map world x/z to [0, 1] for a 200x200 track centered at (0,0)
-    if (
-      typeof playerController.position.x === "number" &&
-      typeof playerController.position.z === "number" &&
-      !isNaN(playerController.position.x) &&
-      !isNaN(playerController.position.z)
-    ) {
-      const u = ((playerController.position.x + 100) / 200 - 0.5) / -4;
-      const v = ((playerController.position.z + 100) / 200 + 0.5) / 2;
-
-      //console.log(getGroundHeight(collideTexture, u, v).r);
-    } else {
-      console.warn(playerController.position);
+    if(keys["shift"]){
+      camera.cameraRadius = 20;
     }
+    else{
+      camera.cameraRadius = 30;
+    }
+
     camera.cameraOrigin.copy(playerController.position);
-    camera.cameraOrigin.add(new THREE.Vector3(1, 2, 0));
+    let localDist = new THREE.Vector3(0, 2, -0.5);
+    localDist.applyAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      playerController.rotation.y
+    );
+    camera.cameraOrigin.add(localDist);
+
+    // Visualize camera origin with a sphere mesh (for debugging)
+    // let origGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+    // let origMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true });
+    // let orig = new THREE.Mesh(origGeometry, origMaterial);
+    // orig.position.copy(camera.cameraOrigin);
+    // scene.add(orig);
+
     camera.updateCameraPosition();
 
-    let translationalSpeed = new THREE.Vector2(
-      playerController.velocity.x,
-      playerController.velocity.z
-    ).length();
+    let translationalSpeed = new THREE.Vector3().copy(playerController.velocity)
+    
+    translationalSpeed.y /= 2;
+    translationalSpeed = translationalSpeed.length();
 
-    camera.camera.fov = Math.min(180, translationalSpeed / 10 + camera.fov); // Adjust FOV based on speed
+    camera.camera.fov += ( Math.min(180, translationalSpeed / 5 + camera.fov) - camera.camera.fov ) / 5; // Adjust FOV based on speed
     const camCenter = (playerController.rotation.y * 180) / Math.PI + 90;
     camera.cameraAzimuthMax = camCenter + 90; // Update camera azimuth based on player rotation
     camera.cameraAzimuthMin = camCenter - 90; // Update camera azimuth based on player rotation
@@ -396,7 +408,7 @@ export function createScene() {
 
       other.player.rotation.copy(other.rotation);
     });
-  }
+  };
 
   function draw() {
     renderer.render(scene, camera.camera);
@@ -496,8 +508,9 @@ function getGroundHeight(groundTexture, u, v) {
   // pixel is [r, g, b, a]
   return { r: pixel[0], g: pixel[1], b: pixel[2], a: pixel[3] };
 }
-
 function displayLoading(per, mes) {
   filled.style.width = per + "%";
   loadingText.innerText = mes;
 }
+
+//wwwwwwwwhwwwe

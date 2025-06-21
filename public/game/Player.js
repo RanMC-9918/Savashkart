@@ -11,8 +11,8 @@ export class PlayerController {
     this.accelerationRot = new THREE.Vector3(0, 0, 0);
     this.rotationSpeed = 0.05; // Rotation speed in radians per second
     this.rotationVelocity = new THREE.Vector3(0, 0, 0);
-    this.speed = 50;
-    this.maxSpeed = 100.0; //terminal velocity
+    this.speed = 100;
+    this.maxSpeed = 70.0; //terminal velocity
     this.player = null;
   }
   tick(deltaTime) {
@@ -24,9 +24,9 @@ export class PlayerController {
     let y = 0;
 
     if (keys["w"]) {
-      x = -this.speed*3; // Move forward
+      x = -this.speed; // Move forward
     } else if (keys["s"]) {
-      x = this.speed*3; // Move backward
+      x = this.speed; // Move backward
     }
 
     if (keys["a"]) {
@@ -38,11 +38,13 @@ export class PlayerController {
     
 
     if (keys[" "] && this.velocity.y === 0) {
-      this.velocity.y = 50;
+      this.velocity.y = 40;
       this.position.y += 0.1;
     }
 
-    this.acceleration.set(x, -60, y);
+    this.acceleration.set(x, 0, y);
+    this.acceleration.clampLength(0, this.speed);
+    this.acceleration.y = -60;
 
     
 

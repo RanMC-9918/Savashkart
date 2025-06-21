@@ -14,6 +14,8 @@ const MAX_CAMERA_RADIUS = 60;
 const MIN_CAMERA_ELEVATION = -45;
 const MAX_CAMERA_ELEVATION = 45;
 
+const MIN_CAMERA_YPOS = 0.5;
+
 // Camera sensitivity
 
 const senz = 0.04;
@@ -29,7 +31,7 @@ export class CameraManager {
       window.ui.gameWindow.clientWidth / window.ui.gameWindow.clientHeight;
 
     this.camera = new THREE.PerspectiveCamera(0, aspect);
-    this.fov = 160;
+    this.fov = 165;
 
     this.cameraOrigin = new THREE.Vector3(0, 0, 0);
     this.cameraRadius = 35; //100
@@ -65,16 +67,14 @@ export class CameraManager {
     this.camera.zoom = this.cameraRadius;
     this.camera.position.x =
       20 *
-      Math.sin(this.cameraAzimuth * DEG2RAD) *
-      Math.cos(this.cameraElevation * DEG2RAD);
-    this.camera.position.y = 80 * Math.sin(this.cameraElevation * DEG2RAD);
+      Math.sin(this.cameraAzimuth * DEG2RAD);
+    this.camera.position.y =  20 * Math.sin(this.cameraElevation * DEG2RAD);
     this.camera.position.z =
       20 *
-      Math.cos(this.cameraAzimuth * DEG2RAD) *
-      Math.cos(this.cameraElevation * DEG2RAD);
+      Math.cos(this.cameraAzimuth * DEG2RAD);
     this.camera.position.add(this.cameraOrigin);
+    this.camera.position.y = Math.max(MIN_CAMERA_YPOS, this.camera.position.y);
     let look = new THREE.Vector3(0).copy(this.cameraOrigin);
-    look.y += 1;
     this.camera.lookAt(look);
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld();
