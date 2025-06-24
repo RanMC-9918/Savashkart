@@ -11,7 +11,7 @@ export class PlayerController {
     this.accelerationRot = new THREE.Vector3(0, 0, 0);
     this.rotationSpeed = 0.05; // Rotation speed in radians per second
     this.rotationVelocity = new THREE.Vector3(0, 0, 0);
-    this.speed = 100;
+    this.speed = 200;
     this.maxSpeed = 70.0; //terminal velocity
     this.player = null;
   }

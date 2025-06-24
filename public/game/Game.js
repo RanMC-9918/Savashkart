@@ -104,7 +104,6 @@ export function createScene() {
           child.receiveShadow = false; // Only cast shadow, don't receive
           child.castShadow = false; // Enable shadow casting
           child.layers.set(0); // Enable layer 0 for the track model
-          
         }
 
         if (child.name && child.name.indexOf("hitbox") != -1) {
@@ -115,7 +114,7 @@ export function createScene() {
 
           hitboxes.push({
             box: mesh,
-            bounce: -5 //-1 - 0
+            bounce: -5, //-1 - 0
           });
         }
       });
@@ -140,15 +139,14 @@ export function createScene() {
 
         console.log(carAnims);
 
-        setInterval(() => {
-        }, 20000) 
+        setInterval(() => {}, 20000);
 
-          playerController.player.traverse((child) => {
-            if (child.isMesh) {
-              child.castShadow = true;
-              child.receiveShadow = false;
-            }
-          });
+        playerController.player.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = false;
+          }
+        });
 
         playerHitbox = new THREE.Box3().setFromObject(playerController.player);
 
@@ -258,6 +256,10 @@ export function createScene() {
       update();
     }, 100);
 
+    ws.onclose = (event) => {
+      console.error("The ws closed because: ", event.data);
+    }
+
     ws.onmessage = async (event) => {
       let data = await JSON.parse(event.data);
       data = await JSON.parse(data);
@@ -299,10 +301,7 @@ export function createScene() {
 
   let others = [];
 
-
-
   function tick() {
-
     boxHelperPlayer.update();
     playerHitbox.setFromObject(playerController.player);
 
@@ -315,29 +314,22 @@ export function createScene() {
     hitboxes.forEach((hitbox) => {
       let mesh = hitbox.box;
       if (mesh.intersectsBox(playerHitbox)) {
-        if(playerHitbox.min.y <= mesh.min.y){
-
+        if (playerHitbox.min.y <= mesh.min.y) {
           console.log("collision side");
           let origin = new THREE.Vector3().copy(mesh.min);
           origin.addScaledVector(mesh.max, 1);
           origin = origin.multiplyScalar(0.5);
           origin.sub(playerController.position);
 
-          if(Math.abs(origin.x) > Math.abs(origin.z)){
+          if (Math.abs(origin.x) > Math.abs(origin.z)) {
             playerController.velocity.x *= hitbox.bounce;
-          }
-          else{
+          } else {
             playerController.velocity.z *= hitbox.bounce;
           }
-
-          
-        }
-        else{
-          
+        } else {
           console.log("collision top");
           playerController.position.y = mesh.max.y;
           playerController.velocity.y *= hitbox.bounce;
-          
         }
       }
     });
@@ -348,10 +340,9 @@ export function createScene() {
 
     elapsed += 0.016;
 
-    if(keys["shift"]){
+    if (keys["shift"]) {
       camera.cameraRadius = 20;
-    }
-    else{
+    } else {
       camera.cameraRadius = 30;
     }
 
@@ -372,21 +363,23 @@ export function createScene() {
 
     camera.updateCameraPosition();
 
-    let translationalSpeed = new THREE.Vector3().copy(playerController.velocity)
-    
+    let translationalSpeed = new THREE.Vector3().copy(
+      playerController.velocity
+    );
+
     translationalSpeed.y /= 2;
     translationalSpeed = translationalSpeed.length();
 
-    camera.camera.fov += ( Math.min(180, translationalSpeed / 5 + camera.fov) - camera.camera.fov ) / 5; // Adjust FOV based on speed
+    camera.camera.fov +=
+      (Math.min(180, translationalSpeed / 5 + camera.fov) - camera.camera.fov) /
+      5; // Adjust FOV based on speed
     const camCenter = (playerController.rotation.y * 180) / Math.PI + 90;
     camera.cameraAzimuthMax = camCenter + 90; // Update camera azimuth based on player rotation
     camera.cameraAzimuthMin = camCenter - 90; // Update camera azimuth based on player rotation
 
     if (Math.abs(camera.cameraAzimuth - camCenter) < 0.1) {
-      playerController.rotationVelocity.y = 0;
     } else {
-      playerController.rotationVelocity.y = camera.cameraAzimuth - camCenter;
-      playerController.rotationVelocity.y *= 0.9;
+      playerController.rotation.y = (camera.cameraAzimuth / 180) * Math.PI;
     }
 
     camera.updateCameraPosition();
@@ -408,7 +401,7 @@ export function createScene() {
 
       other.player.rotation.copy(other.rotation);
     });
-  };
+  }
 
   function draw() {
     renderer.render(scene, camera.camera);
@@ -463,6 +456,8 @@ export function createScene() {
           },
         })
       );
+    } else {
+      console.warn("Websocket is not ready :(");
     }
   }
 
@@ -512,5 +507,3 @@ function displayLoading(per, mes) {
   filled.style.width = per + "%";
   loadingText.innerText = mes;
 }
-
-//wwwwwwwwhwwwe
