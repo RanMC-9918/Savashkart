@@ -18,6 +18,8 @@ const filled = document.getElementById("filled");
 const loadingText = document.getElementById("loadingText");
 const loadingBar = document.getElementById("loadingBar");
 
+const tags = document.getElementById("tags");
+
 export function createScene() {
   const gameWindow = document.getElementById("render-target");
   const scene = new THREE.Scene();
@@ -25,26 +27,23 @@ export function createScene() {
 
   const lightLayer = 10;
   const camera = new CameraManager();
-  camera.camera.layers.enable(lightLayer); // Enable layer 10 for the camera
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(gameWindow.clientWidth, gameWindow.clientHeight);
   renderer.shadowMap.enabled = true; // Enable shadow mapping
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Use soft shadows
+  renderer.shadowMap.type = THREE.PCFShadowMap; // Use soft shadows
   gameWindow.appendChild(renderer.domElement);
 
   const dirLight = new THREE.DirectionalLight(0xffeebb, 10);
   dirLight.castShadow = true; // Enable shadow casting for the light
-  dirLight.shadow.mapSize.width = 1024 * 2; // Set shadow map size
-  dirLight.shadow.mapSize.height = 1024 * 2; // Set shadow map size
-  dirLight.shadow.camera.near = 0.5; // Near plane for shadow camera
-  dirLight.shadow.camera.far = 100; // Far plane for shadow camera
-  dirLight.shadow.camera.left = -80; // Left plane for shadow camera
-  dirLight.shadow.camera.right = 80; // Right plane for shadow camera
-  dirLight.shadow.camera.top = 50; // Top plane for shadow camera
-  dirLight.shadow.camera.bottom = -50; // Bottom plane for shadow camera
-  dirLight.layers.set(lightLayer);
-  dirLight.layers.disable(0);
+  dirLight.shadow.mapSize.width = 1024*2; // Set shadow map size
+  dirLight.shadow.mapSize.height = 1024*2; // Set shadow map size
+  dirLight.shadow.camera.near = 0.1; // Near plane for shadow camera
+  dirLight.shadow.camera.far = 10; // Far plane for shadow camera
+  dirLight.shadow.camera.left = -5; // Left plane for shadow camera
+  dirLight.shadow.camera.right = 5; // Right plane for shadow camera
+  dirLight.shadow.camera.top = 10; // Top plane for shadow camera
+  dirLight.shadow.camera.bottom = -3; // Bottom plane for shadow camera
   scene.add(dirLight);
 
   let carAnims = {};
@@ -53,7 +52,7 @@ export function createScene() {
 
   let playerHitbox = null;
 
-  const ambientLight = new THREE.AmbientLight(0x3030f0, 3); // Soft white light
+  const ambientLight = new THREE.AmbientLight(0x3030f0, 1); // Soft white light
   scene.add(ambientLight);
 
   //load gltf model
@@ -61,27 +60,11 @@ export function createScene() {
 
   const playerController = new PlayerController();
 
-  let marker = new THREE.Mesh(
-    new THREE.SphereGeometry(0.1, 16, 16),
-    new THREE.MeshBasicMaterial({ color: 0xffff00 })
-  );
-
-  scene.add(marker);
-
-  let omarker = new THREE.Mesh(
-    new THREE.SphereGeometry(0.1, 16, 16),
-    new THREE.MeshBasicMaterial({
-      color: 0xffff00,
-    })
-  );
-
-  scene.add(omarker);
 
   let carModel = null;
 
   const loader = new THREE.TextureLoader();
 
-  let collideTexture = null;
 
   let hitboxes = [];
 
@@ -101,20 +84,22 @@ export function createScene() {
       // Enable shadow casting for all meshes in the loaded GLTF model
       track.traverse((child) => {
         if (child.isMesh) {
-          child.receiveShadow = false; // Only cast shadow, don't receive
+          child.receiveShadow = true; 
           child.castShadow = false; // Enable shadow casting
-          child.layers.set(0); // Enable layer 0 for the track model
         }
 
         if (child.name && child.name.indexOf("hitbox") != -1) {
           let mesh = new THREE.Box3().setFromObject(child);
 
+          
+
           let boxHelper = new THREE.BoxHelper(child, 0xff0000); // Red outline
+          boxHelper.visible = false; //HITBOX HELPERS
           scene.add(boxHelper);
 
           hitboxes.push({
             box: mesh,
-            bounce: -5, //-1 - 0
+            bounce: -Number(child.name.charAt(7)), //-inf - 0
           });
         }
       });
@@ -129,7 +114,6 @@ export function createScene() {
         playerController.player = gltf.scene;
 
         playerController.player.scale.set(1, 1, 1); // Scale the model down
-        playerController.player.layers.set(lightLayer); // Enable layer 0 for the player model
 
         carAnimMixer = new THREE.AnimationMixer(playerController.player);
         gltf.animations.forEach((clip) => {
@@ -139,7 +123,6 @@ export function createScene() {
 
         console.log(carAnims);
 
-        setInterval(() => {}, 20000);
 
         playerController.player.traverse((child) => {
           if (child.isMesh) {
@@ -155,7 +138,8 @@ export function createScene() {
         boxHelperPlayer = new THREE.BoxHelper(
           playerController.player,
           0x00ff00
-        ); //Green for player
+        );
+        boxHelperPlayer.visible = false; //HITBOX HELPERS
         scene.add(boxHelperPlayer);
 
         carModel = playerController.player.clone();
@@ -182,13 +166,6 @@ export function createScene() {
 
       name = prompt("Enter your name:");
 
-      console.log(
-        JSON.stringify({
-          host_name: name,
-          min: 0,
-        })
-      );
-
       let gameData = {
         code: "Something is wrong",
       };
@@ -199,7 +176,7 @@ export function createScene() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            min: 0,
+            days: 1,
           }),
         });
 
@@ -221,6 +198,10 @@ export function createScene() {
 
       ws.onopen = () => {
         activateTicking();
+      };
+
+      ws.onclose = (event) => {
+        console.log(event.data);
       };
 
       console.log(ws);
@@ -250,6 +231,10 @@ export function createScene() {
   function activateTicking() {
     let ticking = setInterval(() => {
       tick();
+    }, 50);
+
+    let nonphysicsTicking = setInterval(() => {
+      nonphysicsTick();
     }, 16);
 
     let updating = setInterval(() => {
@@ -258,7 +243,7 @@ export function createScene() {
 
     ws.onclose = (event) => {
       console.error("The ws closed because: ", event.data);
-    }
+    };
 
     ws.onmessage = async (event) => {
       let data = await JSON.parse(event.data);
@@ -276,6 +261,11 @@ export function createScene() {
             exists.velocity.set(other.vel.x, other.vel.y, other.vel.z);
             exists.timeSinceTick = 0;
           } else {
+            let nameTag = document.createElement("div");
+            nameTag.className = "nametag";
+            nameTag.innerText = other.name;
+            tags.appendChild(nameTag);
+
             others.push({
               position: new THREE.Vector3(
                 other.pos.x,
@@ -290,6 +280,7 @@ export function createScene() {
               ),
               player: carModel.clone(),
               name: other.name,
+              nameTag,
               timeSinceTick: 0,
             });
             scene.add(others[others.length - 1].player);
@@ -305,11 +296,7 @@ export function createScene() {
     boxHelperPlayer.update();
     playerHitbox.setFromObject(playerController.player);
 
-    const ground = 0.5;
-    if (playerController.position.y <= ground) {
-      playerController.position.y = ground;
-      playerController.velocity.y = 0;
-    }
+    playerController.acceleration.y = -50;
 
     hitboxes.forEach((hitbox) => {
       let mesh = hitbox.box;
@@ -330,21 +317,58 @@ export function createScene() {
           console.log("collision top");
           playerController.position.y = mesh.max.y;
           playerController.velocity.y *= hitbox.bounce;
+          playerController.acceleration.y = 0;
         }
       }
     });
 
+    if (playerController.position.y <= 0.7) {
+      playerController.acceleration.y = 0;
+      playerController.velocity.y = 0;
+      playerController.position.y = 0.7;
+    }
+
+    if (keys["shift"]) {
+      camera.cameraRadius = 15;
+    } else {
+      camera.cameraRadius = 30;
+    }
+
+    dirLight.position.copy(playerController.position);
+    dirLight.position.add(new THREE.Vector3(-1, 1, 0));
+    dirLight.lookAt(playerController.player);
+
+    dirLight.shadow.camera.updateProjectionMatrix();
+
+    playerController.accelTick(0.05);
+  }
+
+  function nonphysicsTick() {
     playerController.tick(0.016); // Assuming 60 FPS, so deltaTime is ~0.016 seconds
 
     carAnimMixer.update(0.016);
 
     elapsed += 0.016;
 
-    if (keys["shift"]) {
-      camera.cameraRadius = 20;
-    } else {
-      camera.cameraRadius = 30;
-    }
+    others.forEach((other) => {
+      other.player.position.copy(other.position);
+
+      other.position.addScaledVector(other.velocity, 0.016);
+
+      other.velocity.x *= 0.9;
+      other.velocity.z *= 0.9;
+      other.velocity.y *= 1;
+
+      other.timeSinceTick += 0.016;
+
+      let empty = new THREE.Vector3();
+      empty.copy(other.position);
+      empty.y += 3.5;
+
+      updateLabelPosition(empty, other.nameTag);
+
+      other.player.rotation.copy(other.rotation);
+    });
 
     camera.cameraOrigin.copy(playerController.position);
     let localDist = new THREE.Vector3(0, 2, -0.5);
@@ -353,13 +377,6 @@ export function createScene() {
       playerController.rotation.y
     );
     camera.cameraOrigin.add(localDist);
-
-    // Visualize camera origin with a sphere mesh (for debugging)
-    // let origGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-    // let origMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true });
-    // let orig = new THREE.Mesh(origGeometry, origMaterial);
-    // orig.position.copy(camera.cameraOrigin);
-    // scene.add(orig);
 
     camera.updateCameraPosition();
 
@@ -373,34 +390,10 @@ export function createScene() {
     camera.camera.fov +=
       (Math.min(180, translationalSpeed / 5 + camera.fov) - camera.camera.fov) /
       5; // Adjust FOV based on speed
-    const camCenter = (playerController.rotation.y * 180) / Math.PI + 90;
-    camera.cameraAzimuthMax = camCenter + 90; // Update camera azimuth based on player rotation
-    camera.cameraAzimuthMin = camCenter - 90; // Update camera azimuth based on player rotation
 
-    if (Math.abs(camera.cameraAzimuth - camCenter) < 0.1) {
-    } else {
-      playerController.rotation.y = (camera.cameraAzimuth / 180) * Math.PI;
-    }
+    playerController.rotation.y =
+      (camera.cameraAzimuth / 180) * Math.PI - Math.PI / 2;
 
-    camera.updateCameraPosition();
-
-    dirLight.position.copy(playerController.position);
-    dirLight.position.add(new THREE.Vector3(-5, 3, 0));
-    dirLight.lookAt(playerController.player);
-
-    others.forEach((other) => {
-      other.player.position.copy(other.position);
-
-      other.position.addScaledVector(other.velocity, 0.016);
-
-      other.velocity.x *= 0.9;
-      other.velocity.z *= 0.9;
-      other.velocity.y *= 1;
-
-      other.timeSinceTick += 0.016;
-
-      other.player.rotation.copy(other.rotation);
-    });
   }
 
   function draw() {
@@ -415,29 +408,20 @@ export function createScene() {
     renderer.setAnimationLoop(null);
   }
 
+  const canvas = renderer.domElement;
+
+  function updateLabelPosition(vector, labelElement) {
+    vector.project(camera.camera);
+
+    const x = (vector.x * 0.5 + 0.5) * canvas.clientWidth;
+    const y = (-vector.y * 0.5 + 0.5) * canvas.clientHeight;
+
+    labelElement.style.transform = `translate(-50%, -50%) translate(${x}px,${y}px)`;
+  }
+
   function update() {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(
-        JSON.stringify({
-          pos: {
-            x: playerController.position.x,
-            y: playerController.position.y,
-            z: playerController.position.z,
-          },
-          rot: {
-            x: playerController.rotation.x,
-            y: playerController.rotation.y,
-            z: playerController.rotation.z,
-          },
-          vel: {
-            x: playerController.velocity.x,
-            y: playerController.velocity.y,
-            z: playerController.velocity.z,
-          },
-        })
-      );
-
-      console.log(
         JSON.stringify({
           pos: {
             x: playerController.position.x,

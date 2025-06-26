@@ -51,3 +51,11 @@ body{
     z-index: 101;
     margin-top: -65px;
 }
+
+.nametag{
+    width: 100px;
+    text-align: center;
+    background-color: #1f913b;
+    border-radius: 10px;
+    padding: 5px;
+}

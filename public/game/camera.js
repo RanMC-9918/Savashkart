@@ -38,8 +38,6 @@ export class CameraManager {
     this.cameraAzimuth = -90;
     this.cameraElevation = 2.3; //2
 
-    this.cameraAzimuthMin = 0;
-    this.cameraAzimuthMax = 180;
 
     this.updateCameraPosition();
 
@@ -99,34 +97,10 @@ export class CameraManager {
     // Handles the rotation of the camera
     if (!event.ctrlKey && document.pointerLockElement === elem) {
       this.cameraAzimuth += -(event.movementX * AZIMUTH_SENSITIVITY);
-      this.cameraAzimuth = Math.max(
-        this.cameraAzimuthMin,
-        Math.min(this.cameraAzimuthMax, this.cameraAzimuth)
-      );
       this.cameraElevation += event.movementY * ELEVATION_SENSITIVITY;
-      this.cameraElevation = Math.min(
-        MAX_CAMERA_ELEVATION,
-        Math.max(MIN_CAMERA_ELEVATION, this.cameraElevation)
-      );
     }
 
-    // Handles the panning of the camera
-    if (event.buttons & RIGHT_MOUSE_BUTTON && event.ctrlKey) {
-      const forward = new THREE.Vector3(0, 0, 1).applyAxisAngle(
-        Y_AXIS,
-        this.cameraAzimuth * DEG2RAD
-      );
-      const left = new THREE.Vector3(1, 0, 0).applyAxisAngle(
-        Y_AXIS,
-        this.cameraAzimuth * DEG2RAD
-      );
-      this.cameraOrigin.add(
-        forward.multiplyScalar(PAN_SENSITIVITY * event.movementY)
-      );
-      this.cameraOrigin.add(
-        left.multiplyScalar(PAN_SENSITIVITY * event.movementX)
-      );
-    }
+    
 
     this.updateCameraPosition();
   }

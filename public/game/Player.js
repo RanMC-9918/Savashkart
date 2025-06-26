@@ -16,39 +16,7 @@ export class PlayerController {
     this.player = null;
   }
   tick(deltaTime) {
-    this.acceleration.set(0, 0, 0);
-
-    // Update position based on velocity
-    let x = 0;
-
-    let y = 0;
-
-    if (keys["w"]) {
-      x = -this.speed; // Move forward
-    } else if (keys["s"]) {
-      x = this.speed; // Move backward
-    }
-
-    if (keys["a"]) {
-      y = this.speed; // Move forward
-    } else if (keys["d"]) {
-      y = -this.speed; // Move backward
-    }
-
     
-
-    if (keys[" "] && this.velocity.y === 0) {
-      this.velocity.y = 40;
-      this.position.y += 0.1;
-    }
-
-    this.acceleration.set(x, 0, y);
-    this.acceleration.clampLength(0, this.speed);
-    this.acceleration.y = -60;
-
-    
-
-    this.acceleration.applyEuler(this.rotation, "XYZ"); // Apply rotation to acceleration
     // Apply acceleration
     this.velocity.addScaledVector(this.acceleration, deltaTime);
 
@@ -80,5 +48,35 @@ export class PlayerController {
     this.player.rotation.copy(this.rotation);
 
     this.player.rotation.y -= Math.PI / 2;
+  }
+  accelTick(deltaTime){
+
+    // Update position based on velocity
+    let x = 0;
+
+    let y = 0;
+
+    if (keys["w"]) {
+      x = -this.speed; // Move forward
+    } else if (keys["s"]) {
+      x = this.speed; // Move backward
+    }
+
+    if (keys["a"]) {
+      y = this.speed; // Move forward
+    } else if (keys["d"]) {
+      y = -this.speed; // Move backward
+    }
+
+    if (keys[" "] && this.velocity.y === 0) {
+      this.velocity.y = 40;
+      this.position.y += 0.1;
+    }
+
+    this.acceleration.x = x 
+    this.acceleration.z = y;
+    this.acceleration.clampLength(0, this.speed);
+
+    this.acceleration.applyEuler(this.rotation, "XYZ"); // Apply rotation to acceleration
   }
 }

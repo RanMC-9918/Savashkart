@@ -25,6 +25,7 @@ function Game() {
   return (
     <>
       <div id="root-window">
+        <div id="tags"></div>
         <div id="loadingBar">
           <div id="loadingText">Loading THREE.js</div>
           <div id="filled"></div>
