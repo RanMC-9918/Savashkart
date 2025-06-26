@@ -30,20 +30,9 @@ export function createScene() {
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(gameWindow.clientWidth, gameWindow.clientHeight);
-  renderer.shadowMap.enabled = true; // Enable shadow mapping
-  renderer.shadowMap.type = THREE.PCFShadowMap; // Use soft shadows
   gameWindow.appendChild(renderer.domElement);
 
-  const dirLight = new THREE.DirectionalLight(0xffeebb, 10);
-  dirLight.castShadow = true; // Enable shadow casting for the light
-  dirLight.shadow.mapSize.width = 1024*2; // Set shadow map size
-  dirLight.shadow.mapSize.height = 1024*2; // Set shadow map size
-  dirLight.shadow.camera.near = 0.1; // Near plane for shadow camera
-  dirLight.shadow.camera.far = 10; // Far plane for shadow camera
-  dirLight.shadow.camera.left = -5; // Left plane for shadow camera
-  dirLight.shadow.camera.right = 5; // Right plane for shadow camera
-  dirLight.shadow.camera.top = 10; // Top plane for shadow camera
-  dirLight.shadow.camera.bottom = -3; // Bottom plane for shadow camera
+  const dirLight = new THREE.DirectionalLight(0xffeebb, 8);
   scene.add(dirLight);
 
   let carAnims = {};
@@ -52,7 +41,7 @@ export function createScene() {
 
   let playerHitbox = null;
 
-  const ambientLight = new THREE.AmbientLight(0x3030f0, 1); // Soft white light
+  const ambientLight = new THREE.AmbientLight(0x3030f0, 3); // Soft white light
   scene.add(ambientLight);
 
   //load gltf model
@@ -113,7 +102,7 @@ export function createScene() {
         displayLoading(100, "Done");
         playerController.player = gltf.scene;
 
-        playerController.player.scale.set(1, 1, 1); // Scale the model down
+        playerController.player.scale.set(1.1, 1.1, 1.1); 
 
         carAnimMixer = new THREE.AnimationMixer(playerController.player);
         gltf.animations.forEach((clip) => {
@@ -336,7 +325,6 @@ export function createScene() {
 
     dirLight.position.copy(playerController.position);
     dirLight.position.add(new THREE.Vector3(-1, 1, 0));
-    dirLight.lookAt(playerController.player);
 
     dirLight.shadow.camera.updateProjectionMatrix();
 
