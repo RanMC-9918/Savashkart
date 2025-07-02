@@ -37,8 +37,8 @@ export function createScene() {
   dirLight.position.copy(new THREE.Vector3(-20, 3, 0));
   scene.add(dirLight);
 
-  const lighthelper = new THREE.DirectionalLightHelper(dirLight, 3);
-  scene.add(lighthelper);
+  // const lighthelper = new THREE.DirectionalLightHelper(dirLight, 3);
+  // scene.add(lighthelper);
 
   let carAnims = {};
 
@@ -407,8 +407,8 @@ export function createScene() {
 
       other.position.addScaledVector(other.velocity, 0.016);
 
-      other.velocity.x *= 0.9;
-      other.velocity.z *= 0.9;
+      other.velocity.x *= 0.99;
+      other.velocity.z *= 0.99;
       other.velocity.y *= 1;
 
       other.timeSinceTick += 0.016;
@@ -424,7 +424,7 @@ export function createScene() {
     });
 
     camera.cameraOrigin.copy(playerController.position);
-    let localDist = new THREE.Vector3(0, 2, -0.5);
+    let localDist = new THREE.Vector3(0, 4, -0.5);
     localDist.applyAxisAngle(
       new THREE.Vector3(0, 1, 0),
       playerController.rotation.y
@@ -503,42 +503,6 @@ export function createScene() {
   };
 }
 
-function getGroundHeight(groundTexture, u, v) {
-  if (
-    !groundTexture.image ||
-    !groundTexture.image.width ||
-    !groundTexture.image.height
-  )
-    return null;
-
-  //console.log("Getting pixel at", u, v);
-
-  // Create a canvas and draw the image if not already done
-  if (!groundTexture._canvas) {
-    const canvas = document.createElement("canvas");
-    canvas.width = groundTexture.image.width;
-    canvas.height = groundTexture.image.height;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(groundTexture.image, 0, 0);
-    groundTexture._canvas = canvas;
-    groundTexture._ctx = ctx;
-  }
-
-  // Clamp u and v to [0, 1]
-  u = Math.max(0, Math.min(1, u));
-  v = Math.max(0, Math.min(1, v));
-
-  const x = Math.floor(u * groundTexture.image.width);
-  const y = Math.floor(v * groundTexture.image.height);
-
-  // Clamp x and y to valid pixel indices
-  const safeX = Math.max(0, Math.min(groundTexture.image.width - 1, x));
-  const safeY = Math.max(0, Math.min(groundTexture.image.height - 1, y));
-
-  const pixel = groundTexture._ctx.getImageData(safeX, safeY, 1, 1).data;
-  // pixel is [r, g, b, a]
-  return { r: pixel[0], g: pixel[1], b: pixel[2], a: pixel[3] };
-}
 function displayLoading(per, mes) {
   filled.style.width = per + "%";
   loadingText.innerText = mes;
