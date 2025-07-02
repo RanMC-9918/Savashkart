@@ -1,61 +1,108 @@
-
-#render-target{
-    width: 100vw;
-    height: 100vh;
+#render-target {
+  width: 100vw;
+  height: 100vh;
 }
 
-body{
-    overflow: hidden;
+body {
+  overflow: hidden;
 }
 
-#loading{
-    text-align: center;
+#loading {
+  text-align: center;
 }
 
-#start{
+#start {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  background: url("/background.png");
+}
+
+.start button {
+  padding: 15px 40px;
+  font-size: 2rem;
+}
+
+#loadingBar {
+  width: 800px;
+  background-color: white;
+  text-align: center;
+  position: absolute;
+  top: calc(50% - 25px);
+  left: calc(50% - 400px);
+  z-index: 100;
+  height: 65px;
+  overflow: hidden;
+}
+
+#loadingText {
+  padding: 20px;
+}
+
+#filled {
+  height: 100px;
+  width: 0%;
+  background-color: #1f913b;
+  z-index: 101;
+  margin-top: -65px;
+}
+
+.nametag {
+  width: 100px;
+  text-align: center;
+  background-color: #1f913b;
+  border-radius: 10px;
+  padding: 5px;
+}
+
+#leaderboard {
+  position: absolute;
+  top: 50px;
+  right: 20px;
+  background: #33333366;
+  padding: 0px;
+  border: none;
+  gap: 0px;
+  min-width: 200px;
+  max-width: 300px;
+  color: white;
+  line-height: 10px;
+}
+
+#leaderboard .head {
+  background: #3336;
+  box-sizing: border-box;
+}
+
+#leaderboard div {
+  display: flex;
+  width: 100%;
+  border: 1px white solid;
+  justify-content: space-between;
+  padding: 0px 15px;
+}
+
+.row{
+    background: #3336;
     position: absolute;
-    height: 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    backdrop-filter: blur(50px) brightness(0.8);
+  top: 0px;
+  transition: top 0.3s ease-in-out;
+  box-sizing: border-box;
+  height: 45px;
 }
 
-.start button{
-    padding: 15px 40px;
-    font-size: 2rem;
+.row.self{
+    background: rgba(165, 165, 165, 0.808);
 }
 
-#loadingBar{
-    width: 800px;
-    background-color: white;
-    text-align: center;
-    position: absolute;
-    top: calc(50% - 25px);
-    left: calc(50% - 400px);
-    z-index: 100;
-    height: 65px;
-    overflow: hidden;
-}
 
-#loadingText{
-    padding: 20px;
+#leaders {
+    position: relative;
+    padding: 0px !important;
+    border: none !important;
 }
-
-#filled{
-    height: 100px;
-    width: 0%;
-    background-color: #1f913b;
-    z-index: 101;
-    margin-top: -65px;
-}
-
-.nametag{
-    width: 100px;
-    text-align: center;
-    background-color: #1f913b;
-    border-radius: 10px;
-    padding: 5px;
-}
+  

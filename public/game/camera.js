@@ -95,7 +95,7 @@ export class CameraManager {
       return; // Don't move camera until pointer is locked
     }
     // Handles the rotation of the camera
-    if (!event.ctrlKey && document.pointerLockElement === elem) {
+    if (document.pointerLockElement === elem) {
       this.cameraAzimuth += -(event.movementX * AZIMUTH_SENSITIVITY);
       this.cameraElevation += event.movementY * ELEVATION_SENSITIVITY;
     }

@@ -12,8 +12,9 @@ export class PlayerController {
     this.rotationSpeed = 0.05; // Rotation speed in radians per second
     this.rotationVelocity = new THREE.Vector3(0, 0, 0);
     this.speed = 200;
-    this.maxSpeed = 70.0; //terminal velocity
+    this.maxSpeed = 100.0; //terminal velocity
     this.player = null;
+    this.touching = false;
   }
   tick(deltaTime) {
     
@@ -51,6 +52,7 @@ export class PlayerController {
   }
   accelTick(deltaTime){
 
+
     // Update position based on velocity
     let x = 0;
 
@@ -68,7 +70,7 @@ export class PlayerController {
       y = -this.speed; // Move backward
     }
 
-    if (keys[" "] && this.velocity.y === 0) {
+    if (keys[" "] && this.velocity.y === 0 && this.acceleration.y === 0) {
       this.velocity.y = 40;
       this.position.y += 0.1;
     }

@@ -20,12 +20,13 @@ const loadingBar = document.getElementById("loadingBar");
 
 const tags = document.getElementById("tags");
 
+const leaders = document.getElementById("leaders");
+
 export function createScene() {
   const gameWindow = document.getElementById("render-target");
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x112277);
 
-  const lightLayer = 10;
   const camera = new CameraManager();
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -33,7 +34,11 @@ export function createScene() {
   gameWindow.appendChild(renderer.domElement);
 
   const dirLight = new THREE.DirectionalLight(0xffeebb, 8);
+  dirLight.position.copy(new THREE.Vector3(-20, 3, 0));
   scene.add(dirLight);
+
+  const lighthelper = new THREE.DirectionalLightHelper(dirLight, 3);
+  scene.add(lighthelper);
 
   let carAnims = {};
 
@@ -49,13 +54,13 @@ export function createScene() {
 
   const playerController = new PlayerController();
 
-
   let carModel = null;
 
   const loader = new THREE.TextureLoader();
 
-
   let hitboxes = [];
+
+  const leadersList = [];
 
   let boxHelperPlayer = null;
 
@@ -73,22 +78,28 @@ export function createScene() {
       // Enable shadow casting for all meshes in the loaded GLTF model
       track.traverse((child) => {
         if (child.isMesh) {
-          child.receiveShadow = true; 
+          child.receiveShadow = true;
           child.castShadow = false; // Enable shadow casting
         }
 
-        if (child.name && child.name.indexOf("hitbox") != -1) {
-          let mesh = new THREE.Box3().setFromObject(child);
+        if(child.name && child.name === "spawn"){
+          playerController.position.copy(child.position)
+        }
 
-          
+        if (child.name && child.name.indexOf("hitbox") != -1) {
+          console.log(
+            -Number(child.name.substring(7, child.name.indexOf("p")))
+          );
+          let mesh = new THREE.Box3().setFromObject(child);
 
           let boxHelper = new THREE.BoxHelper(child, 0xff0000); // Red outline
           boxHelper.visible = false; //HITBOX HELPERS
           scene.add(boxHelper);
 
+
           hitboxes.push({
             box: mesh,
-            bounce: -Number(child.name.charAt(7)), //-inf - 0
+            bounce: -Number(child.name.substring(7, child.name.indexOf("p"))), //-inf - 0
           });
         }
       });
@@ -102,7 +113,7 @@ export function createScene() {
         displayLoading(100, "Done");
         playerController.player = gltf.scene;
 
-        playerController.player.scale.set(1.1, 1.1, 1.1); 
+        playerController.player.scale.set(1.1, 1.1, 1.1);
 
         carAnimMixer = new THREE.AnimationMixer(playerController.player);
         gltf.animations.forEach((clip) => {
@@ -111,7 +122,6 @@ export function createScene() {
         });
 
         console.log(carAnims);
-
 
         playerController.player.traverse((child) => {
           if (child.isMesh) {
@@ -154,6 +164,11 @@ export function createScene() {
       document.getElementById("start").style.display = "none";
 
       name = prompt("Enter your name:");
+
+      leadersList.push({
+        name,
+        height: 0,
+      });
 
       let gameData = {
         code: "Something is wrong",
@@ -201,6 +216,11 @@ export function createScene() {
 
       name = prompt("Enter your name:");
 
+      leadersList.push({
+        name,
+        height: 0,
+      });
+
       gameCode = prompt("Enter game code:");
 
       ws = new WebSocket(
@@ -238,9 +258,12 @@ export function createScene() {
       let data = await JSON.parse(event.data);
       data = await JSON.parse(data);
 
-      console.log(others);
 
       if (data.people) {
+        leadersList.find((e) => e.name === name).height = Math.floor(
+          playerController.position.y
+        );
+
         data.people.forEach((other) => {
           if (other.name == name) return;
           let exists = others.find((o) => o.name == other.name);
@@ -249,11 +272,19 @@ export function createScene() {
             exists.rotation.set(other.rot.x, other.rot.y, other.rot.z);
             exists.velocity.set(other.vel.x, other.vel.y, other.vel.z);
             exists.timeSinceTick = 0;
+
+            leadersList.find((e) => e.name === other.name).height =
+              exists.position.y;
           } else {
             let nameTag = document.createElement("div");
             nameTag.className = "nametag";
             nameTag.innerText = other.name;
             tags.appendChild(nameTag);
+
+            leadersList.push({
+              name: other.name,
+              height: 0,
+            });
 
             others.push({
               position: new THREE.Vector3(
@@ -275,21 +306,57 @@ export function createScene() {
             scene.add(others[others.length - 1].player);
           }
         });
+        updateLeaders();
       }
     };
   }
 
   let others = [];
 
+  function updateLeaders() {
+    leadersList.sort((leader, leader2) => leader2.height - leader.height);
+    leadersList.forEach((leader, index) => {
+      let exists = Array.from(leaders.childNodes).find((row) => {
+        return (
+          row.querySelector("p") &&
+          row.querySelector("p").innerText === leader.name
+        );
+      });
+
+      if (exists) {
+        exists.querySelectorAll("p")[1].innerText =
+          Math.floor(leader.height) + "m";
+        exists.style.top = index * 45 + "px";
+      } else {
+        let row = document.createElement("div");
+        row.className = "row";
+        let p1 = document.createElement("p");
+        p1.innerText = leader.name;
+        let p2 = document.createElement("p");
+        p2.innerText = leader.height;
+        row.appendChild(p1);
+        row.appendChild(p2);
+
+        if (leader.name === name) {
+          row.classList.add("self");
+        }
+
+        leaders.appendChild(row);
+      }
+    });
+  }
+
   function tick() {
     boxHelperPlayer.update();
     playerHitbox.setFromObject(playerController.player);
 
     playerController.acceleration.y = -50;
+    playerController.touching = false;
 
     hitboxes.forEach((hitbox) => {
       let mesh = hitbox.box;
       if (mesh.intersectsBox(playerHitbox)) {
+        playerController.touching = true;
         if (playerHitbox.min.y <= mesh.min.y) {
           console.log("collision side");
           let origin = new THREE.Vector3().copy(mesh.min);
@@ -298,9 +365,11 @@ export function createScene() {
           origin.sub(playerController.position);
 
           if (Math.abs(origin.x) > Math.abs(origin.z)) {
-            playerController.velocity.x *= hitbox.bounce;
+            playerController.velocity.x *= hitbox.bounce - 3;
+            playerController.acceleration.set(-1, -50, 0);
           } else {
-            playerController.velocity.z *= hitbox.bounce;
+            playerController.velocity.z *= hitbox.bounce - 3;
+            playerController.acceleration.set(0, -50, -1);
           }
         } else {
           console.log("collision top");
@@ -318,15 +387,10 @@ export function createScene() {
     }
 
     if (keys["shift"]) {
-      camera.cameraRadius = 15;
+      camera.cameraRadius = 10;
     } else {
-      camera.cameraRadius = 30;
+      camera.cameraRadius = 20;
     }
-
-    dirLight.position.copy(playerController.position);
-    dirLight.position.add(new THREE.Vector3(-1, 1, 0));
-
-    dirLight.shadow.camera.updateProjectionMatrix();
 
     playerController.accelTick(0.05);
   }
@@ -356,6 +420,7 @@ export function createScene() {
       updateLabelPosition(empty, other.nameTag);
 
       other.player.rotation.copy(other.rotation);
+      other.player.rotation.y -= Math.PI / 2;
     });
 
     camera.cameraOrigin.copy(playerController.position);
@@ -376,12 +441,11 @@ export function createScene() {
     translationalSpeed = translationalSpeed.length();
 
     camera.camera.fov +=
-      (Math.min(180, translationalSpeed / 5 + camera.fov) - camera.camera.fov) /
+      (Math.min(175, translationalSpeed / 5 + camera.fov) - camera.camera.fov) /
       5; // Adjust FOV based on speed
 
     playerController.rotation.y =
       (camera.cameraAzimuth / 180) * Math.PI - Math.PI / 2;
-
   }
 
   function draw() {
